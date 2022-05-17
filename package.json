@@ -22,7 +22,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "compile": "hardhat compile",
-    "test": "npx hardhat test"
+    "test:hardhat": "npx hardhat test"
   },
   "eslintConfig": {
     "extends": [
