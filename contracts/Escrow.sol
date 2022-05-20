@@ -4,41 +4,87 @@ pragma solidity ^0.8.4;
 // Uncomment while developing code for testing.
 import "hardhat/console.sol";
 
-// OpenZeppelin functions to import
-// import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-// import "@openzeppelin/contracts/utils/Strings.sol";
-// import "@openzeppelin/contracts/utils/Base64.sol";
+// OpenZeppelin contracts to import
 // import "@openzeppelin/contracts/access/Ownable.sol";
-// import "hardhat/console.sol";
+// import "@openzeppelin/contracts/access/AccessControl.sol";
 
 contract Escrow {
-
-    mapping(address => uint) public sellerAsk;
-    mapping(address => uint) public buyerBid;    
     address public buyer;
     address public seller;
+    address public buyerContract;
+    address public sellerContract;
 
-    constructor {
-
+    struct buyerInfo {
+        address buyerAddress;
+        address desiredContract;
+        uint bidPrice;
     }
 
-    event Settled();
-
-    function goodToSettle() {
-
+    struct sellerInfo {
+        address sellerAddress;
+        address sellingContract;
+        uint askPrice;
     }
 
-    event Cancelled();
+    bool public isSettled;
+    mapping(address => uint) public sellerAsk;
+    mapping(address => uint) public buyerBid;
 
-    function cancelTransfer() {
+    constructor(
+        address _buyer,
+        address _buyerContract,
+        uint _bidPrice,
+        address _seller,
+        address _sellerContract,
+        uint _askPrice
+    ) {
+        buyer = _buyer;
+        seller = _seller;
+        buyerContract = _buyerContract;
+        sellerContract = _sellerContract;
+        buyerBid[_buyerContract] = _bidPrice;
+        sellerAsk[_sellerContract] = _askPrice;
+    }
 
+    modifier onlyBuyerOrSeller() {
+        require(
+            msg.sender == buyer || msg.sender == seller,
+            "Caller not contract buyer or seller."
+        );
+        _;
+    }
+
+    function goodToSettle() public {
+        require(
+            buyerContract == sellerContract,
+            "Buyer and seller contracts do not match."
+        );
+        require(
+            buyerBid[buyerContract] == sellerAsk[sellerContract],
+            "Buyer and seller prices do not match."
+        );
+
+        // Check that buyer address has sufficient ETH for transaction
+        // If yes:
+        // buyer transfer ETH to seller
+        // seller transfer contract to buyer
+
+        isSettled = true;
+        currentStatus();
+    }
+
+    event Cancelled(address indexed cancellingAddress);
+
+    function cancelTransfer() external onlyBuyerOrSeller {
+        require(isSettled == false, "Escrow already settled.");
+        emit Cancelled(msg.sender);
     }
 
     event Status();
 
-    function currentStatus() view {
-
+    // Parameters:
+    // checks status of eth received and contract held
+    function currentStatus() public {
+        emit Status();
     }
-
 }
-
