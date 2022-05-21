@@ -7,9 +7,9 @@ import "./BED.sol";
 contract escrow{
 
     // Declare state variables
-	  address payable public buyer;
-	  address payable public seller;
-	  address payable public broker;
+    address payable public buyer;
+    address payable public seller;
+    address payable public broker;
     uint public price;
     bool public isBuyerIn;
     bool public isSellerIn;
