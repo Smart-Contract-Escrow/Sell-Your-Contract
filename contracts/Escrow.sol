@@ -3,7 +3,13 @@ pragma solidity ^0.8.1;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract SellYourContract is Ownable {
+interface IFakeERC20 {
+    function transferOwner(address addy) external;
+
+    function getOwner() external;
+}
+
+contract Escrow is Ownable {
     address payable public ownerOfContract;
 
     struct SellersInfo {
@@ -78,6 +84,9 @@ contract SellYourContract is Ownable {
         // TODO:
         // call other contract and change manager ERC20
         // revert if error
+        IFakeERC20(mySellerInfo.contractBeingSold).transferOwner(
+            ownerOfContract
+        );
 
         sellers[mySellerInfo.contractBeingSold] = mySellerInfo;
         emit SellerReady(mySellerInfo);
