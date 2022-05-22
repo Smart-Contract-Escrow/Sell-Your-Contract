@@ -96,8 +96,8 @@ contract SellYourContract is Ownable {
         ); // Buyers Information
         sellers[msg.sender] = mySellerInfo;
 
-        if (buyers2sellers[mySellerInfo.buyersAddress] != address(0)) {
-            // does buyer information already exist?
+        if (buyers2sellers[mySellerInfo.buyersAddress] == address(0)) {
+            // does buyer information not already exist?
             // if so update buyers2sellers mapping
             buyers2sellers[mySellerInfo.buyersAddress] = msg.sender;
         }
@@ -111,10 +111,7 @@ contract SellYourContract is Ownable {
         BuyersInfo memory myBuyerInfo = buyers[mySellerInfo.buyersAddress];
 
         require(sellersLinkAddress != address(0), "Seller not linked to buyer");
-        require(
-            myBuyerInfo.contractBeingBought == mySellerInfo.contractBeingSold,
-            "Contract address does not match what was sent"
-        );
+
         // call other contract and change manager ERC20
 
         mySellerInfo.sentContract = true;
