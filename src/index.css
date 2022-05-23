@@ -1,0 +1,43 @@
+html {
+  box-sizing: border-box;
+  font-size: 62.5%;
+}
+
+*,
+*:before,
+*:after {
+  box-sizing: inherit;
+  margin: 0;
+  padding: 0;
+}
+body {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+form div {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+form button {
+  margin-top: 2rem;
+}
+
+form label {
+  justify-self: start;
+}
+
+h3 {
+  font-size: 2rem;
+}
+
+button {
+  box-shadow: 0px 0.8rem 1.5rem rgba(0, 0, 0, 0.1);
+  background: white;
+  padding: 1rem;
+  border-radius: 1.2rem;
+}
