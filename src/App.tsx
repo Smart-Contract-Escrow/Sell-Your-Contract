@@ -14,6 +14,7 @@ declare global {
 
 function App() {
   const [currentAccount, setCurrentAccount] = useState("");
+  const [loading, setLoading] = useState(false);
 
   function submit(e: React.SyntheticEvent) {
     e.preventDefault();
@@ -21,23 +22,24 @@ function App() {
       contractBeingSold: { value: string };
       sellPrice: { value: string };
       buyerAddress: { value: string };
+      reset: () => null;
     };
     console.log("target", target.contractBeingSold.value);
     const contractBeingSold = target.contractBeingSold.value;
     const buyerAddress = target.buyerAddress.value;
     const sellPrice = BigNumber.from(target.buyerAddress.value);
 
-    // alert(target.contractBeingSold.value);
-    setSellersInfo(contractBeingSold, buyerAddress, sellPrice);
+    setSellersInfo(contractBeingSold, buyerAddress, sellPrice, target);
   }
 
   async function setSellersInfo(
     contractBeingSold: string,
     buyerAddress: string,
-    sellPrice: BigNumber
+    sellPrice: BigNumber,
+    target: any
   ) {
     try {
-      // TODO: SET LOADING HERE
+      setLoading(true);
       const { ethereum } = window;
       if (ethereum) {
         const provider = new ethers.providers.Web3Provider(ethereum);
@@ -53,16 +55,26 @@ function App() {
           sellPrice,
           buyerAddress
         );
+
+        // Listen for event
+        contract.on("SellerReady", (from, message, timestamp) => {
+          console.log("got event", message, from, timestamp);
+          alert("Received info: selling contract " + from.contractBeingSold);
+        });
+
         // wait for transaction to go through
         const receipt = await tx.wait();
         if (receipt.status === 1) {
-          alert("Transaction successful!");
+          console.log("worked!");
+          target.reset();
         } else {
           alert("Transaction failed! Please try again");
         }
       }
     } catch (error) {
       console.log("error: ", error);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -90,6 +102,8 @@ function App() {
       }
     } catch (error) {
       console.log(error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -109,17 +123,25 @@ function App() {
   const renderConnectedContainer = () => (
     <div className="App">
       <h3>Sell Your Contract</h3>
-      <form onSubmit={submit}>
-        <div>
-          <label>Contract Being Sold:</label>
-          <input required type="text" name="contractBeingSold" />
-          <label>Sell Price:</label>
-          <input required type="number" name="sellPrice" />
-          <label>Buyer Address:</label>
-          <input required type="text" name="buyerAddress" />
-        </div>
-        <button>Submit</button>
-      </form>
+      <div className="nes-container with-title">
+        <h1 className="title">Enter Your Information Below</h1>
+        <form onSubmit={submit}>
+          <div>
+            <label>Contract Being Sold:</label>
+            <input required type="text" name="contractBeingSold" />
+            <label>Sell Price:</label>
+            <input required type="number" name="sellPrice" />
+            <label>Buyer Address:</label>
+            <input required type="text" name="buyerAddress" />
+          </div>
+          <button>Submit</button>
+        </form>
+      </div>
+      {loading && (
+        <h1 style={{ color: "red", marginTop: "2rem" }}>
+          Please Wait Sending Transaction...
+        </h1>
+      )}
     </div>
   );
 
