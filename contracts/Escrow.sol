@@ -84,9 +84,9 @@ contract Escrow is Ownable {
         // TODO:
         // call other contract and change manager ERC20
         // revert if error
-        IFakeERC20(mySellerInfo.contractBeingSold).transferOwner(
-            ownerOfContract
-        );
+        // IFakeERC20(mySellerInfo.contractBeingSold).transferOwner(
+        //     ownerOfContract
+        // );
 
         sellers[mySellerInfo.contractBeingSold] = mySellerInfo;
         emit SellerReady(mySellerInfo);
