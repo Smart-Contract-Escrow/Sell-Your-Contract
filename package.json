@@ -22,7 +22,8 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "compile": "hardhat compile",
-    "test:hardhat": "npx hardhat test"
+    "test:hardhat": "npx hardhat test",
+    "deploy:rinkeby": "npx hardhat run scripts/deploy.js --network rinkeby"
   },
   "eslintConfig": {
     "extends": [
@@ -43,9 +44,12 @@
     ]
   },
   "devDependencies": {
+    "@metamask/providers": "^8.1.1",
     "@nomiclabs/hardhat-ethers": "^2.0.6",
     "@nomiclabs/hardhat-waffle": "^2.0.3",
+    "@openzeppelin/contracts": "^4.6.0",
     "chai": "^4.3.6",
+    "dotenv": "^16.0.1",
     "ethereum-waffle": "^3.4.4",
     "ethers": "^5.6.6",
     "hardhat": "^2.9.5"

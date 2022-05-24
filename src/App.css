@@ -1,3 +1,11 @@
 .App {
   text-align: center;
 }
+
+// connect wallet container
+.connect-wallet-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
