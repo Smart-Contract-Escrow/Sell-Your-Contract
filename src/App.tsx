@@ -4,7 +4,8 @@ import React, { useState } from "react";
 import contractAbi from "./utils/Escrow.json";
 import { ExternalProvider } from "@ethersproject/providers";
 
-const CONTRACT_ADDRESS = "0x348484FBdC29e4Dc963279d5aAbD74F3F4b57828";
+// Contract address deployed at
+const CONTRACT_ADDRESS = "0x5f8dd979965fE6A2782fDC536a874C21caCEb3dB";
 
 declare global {
   interface Window {
@@ -29,10 +30,11 @@ function App() {
     const buyerAddress = target.buyerAddress.value;
     const sellPrice = BigNumber.from(target.buyerAddress.value);
 
-    setSellersInfo(contractBeingSold, buyerAddress, sellPrice, target);
+    setContractDetail(contractBeingSold, buyerAddress, sellPrice, target);
   }
 
-  async function setSellersInfo(
+  // TODO: Move to hook
+  async function setContractDetail(
     contractBeingSold: string,
     buyerAddress: string,
     sellPrice: BigNumber,
@@ -50,7 +52,7 @@ function App() {
           signer
         );
 
-        let tx = await contract.setSellersInfo(
+        let tx = await contract.setContractDetail(
           contractBeingSold,
           sellPrice,
           buyerAddress
@@ -78,6 +80,7 @@ function App() {
     }
   }
 
+  // TODO: Move to hook
   const connectWallet = async () => {
     try {
       const { ethereum } = window as any;

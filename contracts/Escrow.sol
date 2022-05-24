@@ -10,9 +10,9 @@ interface IFakeERC20 {
 }
 
 contract Escrow is Ownable {
-    address payable public ownerOfContract;
+    address payable internal ownerOfContract;
 
-    struct SellersInfo {
+    struct EscrowContracts {
         address contractBeingSold;
         address sellerAddress;
         uint256 sellPrice;
@@ -25,10 +25,10 @@ contract Escrow is Ownable {
         uint256 sellPrice;
     }
 
-    mapping(address => SellersInfo) public sellers;
+    mapping(address => EscrowContracts) public escrowDetails;
 
-    event SellerReady(SellersInfo seller);
-    event TransactionCompleted(BuyersInfo buyer, SellersInfo seller);
+    event SellerReady(EscrowContracts seller);
+    event TransactionCompleted(BuyersInfo buyer, EscrowContracts seller);
 
     constructor() {
         ownerOfContract = payable(msg.sender);
@@ -48,7 +48,7 @@ contract Escrow is Ownable {
 
         // verify sellers information matches buyers information, seller must go first
         require(
-            sellers[contractBeingBought].buyersAddress == msg.sender,
+            escrowDetails[contractBeingBought].buyersAddress == msg.sender,
             "Seller address did not match buyer"
         );
 
@@ -56,21 +56,21 @@ contract Escrow is Ownable {
     }
 
     function buyerSendPay(BuyersInfo memory myBuyersInfo) public payable {
-        SellersInfo memory mySellerInfo = sellers[
+        EscrowContracts memory mySellerInfo = escrowDetails[
             myBuyersInfo.contractBeingBought
         ]; // Sellers Info
 
         goodToGo(mySellerInfo, myBuyersInfo);
     }
 
-    function setSellersInfo(
+    function setContractDetail(
         address contractBeingSold,
         uint256 sellPrice,
         address buyerAddress
     ) external {
         address sellerAddress = msg.sender;
 
-        SellersInfo memory mySellerInfo = SellersInfo(
+        EscrowContracts memory mySellerInfo = EscrowContracts(
             contractBeingSold,
             sellerAddress,
             sellPrice,
@@ -80,7 +80,7 @@ contract Escrow is Ownable {
         sellerSendContract(mySellerInfo);
     }
 
-    function sellerSendContract(SellersInfo memory mySellerInfo) internal {
+    function sellerSendContract(EscrowContracts memory mySellerInfo) internal {
         // TODO:
         // call other contract and change manager ERC20
         // revert if error
@@ -88,11 +88,11 @@ contract Escrow is Ownable {
         //     ownerOfContract
         // );
 
-        sellers[mySellerInfo.contractBeingSold] = mySellerInfo;
+        escrowDetails[mySellerInfo.contractBeingSold] = mySellerInfo;
         emit SellerReady(mySellerInfo);
     }
 
-    function goodToGo(SellersInfo memory seller, BuyersInfo memory buyer)
+    function goodToGo(EscrowContracts memory seller, BuyersInfo memory buyer)
         internal
     {
         require(
@@ -105,33 +105,24 @@ contract Escrow is Ownable {
         );
         // good to go send values
         // transfer
-        payable(seller.sellerAddress).transfer(buyer.sellPrice);
+        (bool success, ) = payable(seller.sellerAddress).call{
+            value: buyer.sellPrice
+        }("");
+        require(success, "Payment Failed to seller address");
 
         // TODO:
         // transfer ERC 20 contract ownership to buyer
 
         emit TransactionCompleted(buyer, seller);
-        delete sellers[seller.contractBeingSold];
-    }
-
-    function getBalance() public view onlyOwner returns (uint256) {
-        return address(this).balance;
+        delete escrowDetails[seller.contractBeingSold];
     }
 
     function getSellerAmount(address myContract) public view returns (uint256) {
-        SellersInfo memory seller = sellers[myContract];
+        EscrowContracts memory seller = escrowDetails[myContract];
         require(
             seller.buyersAddress == msg.sender,
             "Only buyer can see amount"
         );
         return seller.sellPrice;
-    }
-
-    function withdraw() public payable onlyOwner {
-        uint256 balance = address(this).balance;
-        (bool success, ) = (msg.sender).call{value: balance}(
-            "transfered financier"
-        );
-        require(success, "Failed to withdraw money from contract.");
     }
 }

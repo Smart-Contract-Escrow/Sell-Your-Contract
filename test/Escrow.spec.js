@@ -32,13 +32,13 @@ describe("Escrow", function () {
 
     const seller = escrowContract.connect(sellerAccount);
 
-    await seller.setSellersInfo(
+    await seller.setContractDetail(
       fakeERC20Contract.address,
       sellAmount,
       buyerAccount.address
     );
 
-    const { contractBeingSold, buyersAddress } = await seller.sellers(
+    const { contractBeingSold, buyersAddress } = await seller.escrowDetails(
       fakeERC20Contract.address
     );
 
