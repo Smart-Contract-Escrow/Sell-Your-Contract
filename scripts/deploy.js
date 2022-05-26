@@ -1,4 +1,5 @@
 const { ethers } = require("hardhat");
+const fs = require("fs").promises;
 
 async function main() {
   const EscrowFactory = await ethers.getContractFactory("Escrow");
@@ -11,6 +12,20 @@ async function main() {
 
   console.log("escrow deployed too", escrow.address);
   console.log("ERC20 escrow deployed too", escrowERC20.address);
+
+  await writeToFile(escrow.address, escrowERC20.address);
+}
+
+async function writeToFile(escrow, erc20) {
+  const escrowInfo = {
+    escrow,
+    erc20
+  };
+
+  const data = JSON.stringify(escrowInfo);
+
+  // write JSON string to a file
+  await fs.writeFile("src/addresses.json", data);
 }
 
 main()

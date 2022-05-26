@@ -4,12 +4,9 @@ import React, { useState } from "react";
 import contractAbi from "./utils/Escrow.json";
 import fakeERC20Contract from "./utils/FakeERC20.json";
 import { ExternalProvider } from "@ethersproject/providers";
+import address from "./addresses.json";
 
-// Contract address deployed at
-const CONTRACT_ADDRESS = "0x5f8dd979965fE6A2782fDC536a874C21caCEb3dB";
-
-// Contract address of FakeERC20 Contract
-const ERC20_CONTRACT_ADDRESS = "0x680cc35c4A38fF889DCb7da1074e2c1a66C08fC3";
+const { escrow: CONTRACT_ADDRESS, erc20: ERC20_CONTRACT_ADDRESS } = address;
 
 declare global {
   interface Window {
@@ -57,6 +54,7 @@ function App() {
           signer
         );
         let owner = await contract.getOwner();
+        console.log("owner of contract", owner);
         if (owner !== (await signer.getAddress())) {
           alert("Error! Cannot send contract if you are not owner!");
         }
@@ -106,6 +104,7 @@ function App() {
           sellPrice,
           buyerAddress
         );
+        console.log("go ther");
 
         // Listen for event
         contract.on("SellerReady", (from, message, timestamp) => {

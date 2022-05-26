@@ -3,8 +3,9 @@ pragma solidity ^0.8.1;
 
 /// @dev use interface to interact with a deployed and ownable contract
 interface IFakeERC20 {
-    function transferOwnership(address addr) external;
-    function getOwner() external;
+    function transferOwner(address addr) external;
+
+    function getOwner() external view returns (address);
 }
 
 /// @title An Escrow Protocol
@@ -58,7 +59,18 @@ contract Escrow {
 
     /// @dev seller transfer ownership to the escrow
     function sellerSendContract(EscrowContracts memory mySellerInfo) internal {
-        IFakeERC20(mySellerInfo.contractBeingSold).transferOwnership(address(this));
+        // Done externally for now
+        // IFakeERC20(mySellerInfo.contractBeingSold).transferOwner(
+        //     address(this)
+        // );
+        // check if contract is the new owner if not revert
+        address erc20Owner = IFakeERC20(mySellerInfo.contractBeingSold)
+            .getOwner();
+        require(
+            erc20Owner == address(this),
+            "Owner of contract is not escrow account"
+        );
+
         escrowDetails[mySellerInfo.contractBeingSold] = mySellerInfo;
         emit SellerReady(mySellerInfo);
     }
@@ -116,7 +128,7 @@ contract Escrow {
         require(sent, "Payment Failed to seller address");
 
         // use interface to transferownership to buyer
-        IFakeERC20(seller.contractBeingSold).transferOwnership(buyer.buyerAddress);
+        IFakeERC20(seller.contractBeingSold).transferOwner(buyer.buyerAddress);
 
         // emit an event when transaction completed
         emit TransactionCompleted(buyer, seller);
