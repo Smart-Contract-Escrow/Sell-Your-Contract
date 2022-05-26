@@ -14,11 +14,11 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "addy",
+          "name": "addr",
           "type": "address"
         }
       ],
-      "name": "transferOwner",
+      "name": "transferOwnership",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

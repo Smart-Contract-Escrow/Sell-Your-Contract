@@ -2,10 +2,14 @@ import "./App.css";
 import { BigNumber, ethers } from "ethers";
 import React, { useState } from "react";
 import contractAbi from "./utils/Escrow.json";
+import fakeERC20Contract from "./utils/FakeERC20.json";
 import { ExternalProvider } from "@ethersproject/providers";
 
 // Contract address deployed at
 const CONTRACT_ADDRESS = "0x5f8dd979965fE6A2782fDC536a874C21caCEb3dB";
+
+// Contract address of FakeERC20 Contract
+const ERC20_CONTRACT_ADDRESS = "0x680cc35c4A38fF889DCb7da1074e2c1a66C08fC3";
 
 declare global {
   interface Window {
@@ -17,7 +21,7 @@ function App() {
   const [currentAccount, setCurrentAccount] = useState("");
   const [loading, setLoading] = useState(false);
 
-  function submit(e: React.SyntheticEvent) {
+  async function submit(e: React.SyntheticEvent) {
     e.preventDefault();
     const target = e.target as typeof e.target & {
       contractBeingSold: { value: string };
@@ -25,12 +29,57 @@ function App() {
       buyerAddress: { value: string };
       reset: () => null;
     };
-    console.log("target", target.contractBeingSold.value);
     const contractBeingSold = target.contractBeingSold.value;
     const buyerAddress = target.buyerAddress.value;
     const sellPrice = BigNumber.from(target.buyerAddress.value);
 
-    setContractDetail(contractBeingSold, buyerAddress, sellPrice, target);
+    // First transfer contract ownership to contract
+    if (await transferContractOwnership(contractBeingSold)) {
+      setContractDetail(contractBeingSold, buyerAddress, sellPrice, target);
+    } else {
+      alert("transfer of ownership failed");
+    }
+  }
+
+  // TODO: Refactor to hook
+  async function transferContractOwnership(
+    contractBeingSold: string
+  ): Promise<boolean> {
+    try {
+      setLoading(true);
+      const { ethereum } = window;
+      if (ethereum) {
+        const provider = new ethers.providers.Web3Provider(ethereum);
+        const signer = provider.getSigner();
+        const contract = new ethers.Contract(
+          ERC20_CONTRACT_ADDRESS,
+          fakeERC20Contract.abi,
+          signer
+        );
+        let owner = await contract.getOwner();
+        if (owner !== (await signer.getAddress())) {
+          alert("Error! Cannot send contract if you are not owner!");
+        }
+        console.log("signer.getAddress()", await signer.getAddress());
+
+        // transfer owner
+        let tx = await contract.transferOwner(CONTRACT_ADDRESS);
+        const receipt = await tx.wait();
+        if (receipt.status === 1) {
+          console.log("new owner", await contract.getOwner());
+          return true;
+        } else {
+          alert("transaction failed! please try again");
+          return false;
+        }
+      }
+    } catch (e) {
+      console.log("e", e);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+    return false;
   }
 
   // TODO: Move to hook
@@ -70,7 +119,7 @@ function App() {
           console.log("worked!");
           target.reset();
         } else {
-          alert("Transaction failed! Please try again");
+          alert("transaction failed! please try again");
         }
       }
     } catch (error) {
