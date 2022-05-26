@@ -6,7 +6,7 @@ async function main() {
   escrow = await EscrowFactory.deploy();
   await escrow.deployed();
 
-  const ERC20EscrowFactory = await ethers.getContractFactory("FakeERC20");
+  const ERC20EscrowFactory = await ethers.getContractFactory("TestERC20");
   escrowERC20 = await ERC20EscrowFactory.deploy(10);
   await escrowERC20.deployed();
 

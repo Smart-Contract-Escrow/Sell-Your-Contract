@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@emotion/react": "^11.9.0",
+    "@emotion/styled": "^11.8.1",
+    "@mui/material": "^5.8.1",
     "@testing-library/jest-dom": "^5.16.4",
     "@testing-library/react": "^13.2.0",
     "@testing-library/user-event": "^13.5.0",
@@ -20,7 +23,7 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "abi:escrow": "cp artifacts/contracts/Escrow.sol/* src/utils",
-    "abi:erc20": "cp artifacts/contracts/FakeERC20.sol/* src/utils",
+    "abi:erc20": "cp artifacts/contracts/TestERC20.sol/* src/utils",
     "abi": "npm run abi:escrow && npm run abi:erc20",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
