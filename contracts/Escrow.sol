@@ -31,7 +31,7 @@ contract Escrow {
     // emit an event when seller is ready
     event SellerReady(EscrowContracts seller);
 
-    //emit an event when the transaction is completed
+    // emit an event when the transaction is completed
     event TransactionCompleted(BuyersInfo buyer, EscrowContracts seller);
 
     constructor() {
@@ -53,6 +53,8 @@ contract Escrow {
             buyerAddress
         );
 
+<<<<<<< HEAD:contracts/escrow.sol
+=======
         sellerSendContract(mySellerInfo);
     }
 
@@ -66,7 +68,9 @@ contract Escrow {
     /// @dev seller transfer ownership to the escrow
     function sellerSendContract(EscrowContracts memory mySellerInfo) internal {
         ITestERC20(mySellerInfo.contractBeingSold).transferOwnership(address(this));
+>>>>>>> d4a2159cdbff2aeaaf5866e7acc7b66286e5a3d9:contracts/Escrow.sol
         escrowDetails[mySellerInfo.contractBeingSold] = mySellerInfo;
+
         emit SellerReady(mySellerInfo);
     }
 
@@ -96,6 +100,8 @@ contract Escrow {
         EscrowContracts memory mySellerInfo = escrowDetails[
             myBuyersInfo.contractBeingBought
         ];
+        // check if the contract ownership has transferred to the escrow contract
+        require(ITestERC20(contractBeingBought).owner() == address(this), "Seller has not transferred ownership to the escrow");
 
         require(
             escrowDetails[contractBeingBought].buyersAddress == msg.sender,
@@ -119,10 +125,14 @@ contract Escrow {
         );
 
         // buyer sends payment to seller
-        (bool sent, ) = seller.sellerAddress.call{value: seller.sellPrice}("");
+        (bool sent, ) = seller.sellerAddress.call{value: buyer.sellPrice}("");
         require(sent, "Payment Failed to seller address");
 
+<<<<<<< HEAD:contracts/escrow.sol
+        // use interface to transfer ownership to buyer
+=======
         // use interface to transferownership to buyer
+>>>>>>> d4a2159cdbff2aeaaf5866e7acc7b66286e5a3d9:contracts/Escrow.sol
         ITestERC20(seller.contractBeingSold).transferOwnership(buyer.buyerAddress);
 
         // emit an event when transaction completed
