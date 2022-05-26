@@ -22,11 +22,15 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "abi:escrow": "cp artifacts/contracts/Escrow.sol/* src/utils",
+    "abi:erc20": "cp artifacts/contracts/TestERC20.sol/* src/utils",
+    "abi": "npm run abi:escrow && npm run abi:erc20",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "compile": "hardhat compile",
     "test:hardhat": "npx hardhat test",
-    "deploy:rinkeby": "npx hardhat run scripts/deploy.js --network rinkeby"
+    "deploy:rinkeby": "npx hardhat run scripts/deploy.js --network rinkeby",
+    "deploy": "npm run compile && npm run abi && npm run deploy:rinkeby"
   },
   "eslintConfig": {
     "extends": [

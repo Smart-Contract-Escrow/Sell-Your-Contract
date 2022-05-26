@@ -1,11 +1,11 @@
 {
   "_format": "hh-sol-artifact-1",
-  "contractName": "IFakeERC20",
+  "contractName": "ITestERC20",
   "sourceName": "contracts/Escrow.sol",
   "abi": [
     {
       "inputs": [],
-      "name": "getOwner",
+      "name": "owner",
       "outputs": [
         {
           "internalType": "address",
@@ -24,7 +24,7 @@
           "type": "address"
         }
       ],
-      "name": "transferOwner",
+      "name": "transferOwnership",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

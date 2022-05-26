@@ -2,12 +2,14 @@ import "./App.css";
 import { BigNumber, ethers } from "ethers";
 import React, { useState } from "react";
 import contractAbi from "./utils/Escrow.json";
+import TestERC20Contract from "./utils/TestERC20.json";
 import { ExternalProvider } from "@ethersproject/providers";
+import address from "./addresses.json";
+
 import nft1 from "./nft1.webp";
 import nft2 from "./nft2.png";
 
-// Contract address deployed at
-const CONTRACT_ADDRESS = "0x5Bbe8673162A1A743D844891ae6069f1A1b173Cc";
+const { escrow: CONTRACT_ADDRESS, erc20: ERC20_CONTRACT_ADDRESS } = address;
 
 declare global {
   interface Window {
@@ -18,64 +20,77 @@ declare global {
 function App() {
   const [currentAccount, setCurrentAccount] = useState("");
   const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState('');
+  const [user, setUser] = useState("");
 
-  function submit(e: React.SyntheticEvent) {
+  async function submit(e: React.SyntheticEvent) {
     e.preventDefault();
-    if (user == 'seller') {
+    const target = e.target as typeof e.target & {
+      contractBeingSold: { value: string };
+      sellPrice: { value: string };
+      buyerAddress: { value: string };
+      reset: () => null;
+    };
 
-      const target = e.target as typeof e.target & {
-        contractBeingSold: { value: string };
-        sellPrice: { value: string };
-        buyerAddress: { value: string };
-        reset: () => null;
-      };
+    if (user === "seller") {
       console.log("target", target.contractBeingSold.value);
       const contractBeingSold = target.contractBeingSold.value;
       const buyerAddress = target.buyerAddress.value;
-      const sellPrice = BigNumber.from(target.buyerAddress.value);
+      const sellPrice = BigNumber.from(target.sellPrice.value);
 
-      setContractDetail(contractBeingSold, buyerAddress, sellPrice, target);
+      // First transfer contract ownership to contract
+      if (await transferContractOwnership(contractBeingSold)) {
+        setContractDetail(contractBeingSold, buyerAddress, sellPrice, target);
+      } else {
+        alert("transfer of ownership failed");
+      }
     } else {
-      const target = e.target as typeof e.target & {
-        contractBeingPurchased: { value: string };
-        buyPrice: { value: string };
-        reset: () => null;
-      };
-      const buyPrice = target.buyPrice.value;
-      sendEth(CONTRACT_ADDRESS, buyPrice)
+      const contractBeingSold = target.contractBeingSold.value;
+      const sellPrice = BigNumber.from(target.sellPrice.value);
+      sendEth(CONTRACT_ADDRESS, sellPrice, contractBeingSold);
     }
-
   }
 
-  async function sendEth(
-    escrowAddress: string,
-    purchasePrice: string,
-  ) {
+  // TODO: Refactor to hook
+  async function transferContractOwnership(
+    contractBeingSold: string
+  ): Promise<boolean> {
     try {
       setLoading(true);
-      const { ethereum } = window as any;
+      const { ethereum } = window;
       if (ethereum) {
-        await ethereum.send("eth_requestAccounts");
         const provider = new ethers.providers.Web3Provider(ethereum);
         const signer = provider.getSigner();
-        ethers.utils.getAddress(escrowAddress);
-        const tx = await signer.sendTransaction({
-          to: escrowAddress,
-          value: ethers.utils.parseEther(purchasePrice),
-          gasLimit: ethers.utils.parseEther(purchasePrice)
-        });
-        console.log("tx", tx);
+        const contract = new ethers.Contract(
+          ERC20_CONTRACT_ADDRESS,
+          TestERC20Contract.abi,
+          signer
+        );
+        let owner = await contract.owner();
+        console.log("owner of contract", owner);
+        if (owner !== (await signer.getAddress())) {
+          alert("Error! Cannot send contract if you are not owner!");
+        }
+        console.log("signer.getAddress()", await signer.getAddress());
 
-
+        // transfer owner
+        let tx = await contract.transferOwnership(CONTRACT_ADDRESS);
+        const receipt = await tx.wait();
+        if (receipt.status === 1) {
+          console.log("new owner", await contract.owner());
+          return true;
+        } else {
+          alert("transaction failed! please try again");
+          return false;
+        }
       }
-    } catch (error) {
-      console.log("error: ", error);
+    } catch (e) {
+      console.log("e", e);
+      return false;
     } finally {
       setLoading(false);
     }
+    return false;
   }
-
 
   // TODO: Move to hook
   async function setContractDetail(
@@ -114,7 +129,7 @@ function App() {
           console.log("worked!");
           target.reset();
         } else {
-          alert("Transaction failed! Please try again");
+          alert("transaction failed! please try again");
         }
       }
     } catch (error) {
@@ -154,11 +169,65 @@ function App() {
     }
   };
 
+  async function sendEth(
+    escrowAddress: string,
+    purchasePrice: BigNumber,
+    contractBeingPurchased: string
+  ) {
+    try {
+      console.log("purchase price", purchasePrice);
+      setLoading(true);
+      const { ethereum } = window as any;
+      if (ethereum) {
+        await ethereum.send("eth_requestAccounts");
+        const provider = new ethers.providers.Web3Provider(ethereum);
+        const signer = provider.getSigner();
+
+        const contract = new ethers.Contract(
+          CONTRACT_ADDRESS,
+          contractAbi.abi,
+          signer
+        );
+
+        let tx = await contract.buyerSendPay(
+          contractBeingPurchased,
+          purchasePrice,
+          {
+            value: purchasePrice
+          }
+        );
+
+        // Listen for event
+        contract.on("TransactionCompleted", (from, message, timestamp) => {
+          console.log("got event", message, from, timestamp);
+          alert("Received info: That transaction is complete");
+        });
+
+        // wait for transaction to go through
+        const receipt = await tx.wait();
+        if (receipt.status === 1) {
+          console.log("worked!");
+        } else {
+          alert("transaction failed! please try again");
+        }
+      }
+    } catch (error) {
+      console.log("error: ", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   // Render methods
   const renderNotConnectedContainer = () => (
     <div
       className="connect-wallet-container"
-      style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: '35vh' }}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        marginTop: "35vh"
+      }}
     >
       <h3>Escrow App Services</h3>
 
@@ -170,11 +239,11 @@ function App() {
   const renderButtonGroup = () => {
     return (
       <div className="button-container">
-        <button onClick={() => setUser('buyer')}>Buy Contract</button>
-        <button onClick={() => setUser('seller')}>Sell Contract</button>
+        <button onClick={() => setUser("buyer")}>Buy Contract</button>
+        <button onClick={() => setUser("seller")}>Sell Contract</button>
       </div>
-    )
-  }
+    );
+  };
 
   const renderUserForm = () => {
     return (
@@ -183,28 +252,31 @@ function App() {
         <div className="nes-container with-title">
           <h1 className="title">Enter Your Information Below</h1>
           <form onSubmit={submit}>
-            {
-              user == 'seller' ? (
-                <div>
-                  <label>Contract Being Sold:</label>
-                  <input required type="text" name="contractBeingSold" />
-                  <label>Sell Price:</label>
-                  <input required type="decimal" name="sellPrice" />
-                  <label>Buyer Address:</label>
-                  <input required type="text" name="buyerAddress" />
-                </div>
-              ) : (
-                <div>
-                  <label>Contract Being Purchased:</label>
-                  <input required type="text" name="contractBeingPurchased" />
-                  <label>Buy Price:</label>
-                  <input required type="decimal" name="buyPrice" />
-                  <label>Escrow Address:</label>
-                  <input required type="text" name="escrowddress" value={CONTRACT_ADDRESS} disabled />
-                </div>
-              )
-
-            }
+            {user === "seller" ? (
+              <div>
+                <label>Contract Being Sold:</label>
+                <input required type="text" name="contractBeingSold" />
+                <label>Sell Price:</label>
+                <input required type="decimal" name="sellPrice" />
+                <label>Buyer Address:</label>
+                <input required type="text" name="buyerAddress" />
+              </div>
+            ) : (
+              <div>
+                <label>Contract Being Purchased:</label>
+                <input required type="text" name="contractBeingSold" />
+                <label>Buy Price:</label>
+                <input required type="decimal" name="sellPrice" />
+                <label>Escrow Address:</label>
+                <input
+                  required
+                  type="text"
+                  name="escrowddress"
+                  value={CONTRACT_ADDRESS}
+                  disabled
+                />
+              </div>
+            )}
             <button>Submit</button>
           </form>
         </div>
@@ -214,45 +286,42 @@ function App() {
           </h1>
         )}
       </div>
-    )
-  }
+    );
+  };
 
   const renderConnectedContainer = () => (
     <div className="App">
-      <div style={{ display: 'flex', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid grey' }}>
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            border: "1px solid grey"
+          }}
+        >
           <div>
-            <img style={{ width: '225px' }} src={nft1} />
+            <img style={{ width: "225px" }} src={nft1} alt="image2" />
             <div>Buyer</div>
           </div>
-          <div>
-            Sent Ethereum
-          </div>
+          <div>Sent Ethereum</div>
         </div>
-        <div>
-
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid grey' }}>
+        <div></div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            border: "1px solid grey"
+          }}
+        >
           <div>
-            <img style={{ width: '225px' }} src={nft2} />
+            <img style={{ width: "225px" }} src={nft2} alt="image1" />
             <div>Seller</div>
           </div>
-          <div>
-            Pending Transfer
-          </div>
+          <div>Pending Transfer</div>
         </div>
-
       </div>
-      <div className="button-group">
-        {
-          renderButtonGroup()
-        }
-      </div>
-      <div>
-        {
-          user && renderUserForm()
-        }
-      </div>
+      <div className="button-group">{renderButtonGroup()}</div>
+      <div>{user && renderUserForm()}</div>
     </div>
   );
 
