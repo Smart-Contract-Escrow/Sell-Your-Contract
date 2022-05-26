@@ -32,7 +32,7 @@ contract Escrow {
     // emit an event when seller is ready
     event SellerReady(EscrowContracts seller);
 
-    //emit an event when the transaction is completed
+    // emit an event when the transaction is completed
     event TransactionCompleted(BuyersInfo buyer, EscrowContracts seller);
 
     constructor() {
@@ -69,6 +69,7 @@ contract Escrow {
         );
 
         escrowDetails[mySellerInfo.contractBeingSold] = mySellerInfo;
+
         emit SellerReady(mySellerInfo);
     }
 
@@ -115,6 +116,11 @@ contract Escrow {
         EscrowContracts memory mySellerInfo = escrowDetails[
             myBuyersInfo.contractBeingBought
         ];
+        // check if the contract ownership has transferred to the escrow contract
+        require(
+            ITestERC20(contractBeingBought).owner() == address(this),
+            "Seller has not transferred ownership to the escrow"
+        );
 
         require(
             escrowDetails[contractBeingBought].buyersAddress == msg.sender,
@@ -138,7 +144,7 @@ contract Escrow {
         );
 
         // buyer sends payment to seller
-        (bool sent, ) = seller.sellerAddress.call{value: seller.sellPrice}("");
+        (bool sent, ) = seller.sellerAddress.call{value: buyer.sellPrice}("");
         require(sent, "Payment Failed to seller address");
 
         // use interface to transferownership to buyer
