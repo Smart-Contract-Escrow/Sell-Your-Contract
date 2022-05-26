@@ -2,6 +2,14 @@
   text-align: center;
 }
 
+.button-group {
+  margin-top: 15vh;
+}
+
+button {
+  margin: 20px;
+}
+
 // connect wallet container
 .connect-wallet-container {
   display: flex;
