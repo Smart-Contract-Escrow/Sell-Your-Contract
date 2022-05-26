@@ -2,9 +2,9 @@
 pragma solidity ^0.8.1;
 
 /// @dev use interface to interact with a deployed and ownable contract
-interface IFakeERC20 {
+interface ITestERC20 {
     function transferOwnership(address addr) external;
-    function getOwner() external;
+    function owner() external returns (address);
 }
 
 /// @title An Escrow Protocol
@@ -31,7 +31,7 @@ contract Escrow {
     // emit an event when seller is ready
     event SellerReady(EscrowContracts seller);
 
-    //emit an event when the transaction is completed
+    // emit an event when the transaction is completed
     event TransactionCompleted(BuyersInfo buyer, EscrowContracts seller);
 
     constructor() {
@@ -53,13 +53,8 @@ contract Escrow {
             buyerAddress
         );
 
-        sellerSendContract(mySellerInfo);
-    }
-
-    /// @dev seller transfer ownership to the escrow
-    function sellerSendContract(EscrowContracts memory mySellerInfo) internal {
-        IFakeERC20(mySellerInfo.contractBeingSold).transferOwnership(address(this));
         escrowDetails[mySellerInfo.contractBeingSold] = mySellerInfo;
+
         emit SellerReady(mySellerInfo);
     }
 
@@ -89,6 +84,8 @@ contract Escrow {
         EscrowContracts memory mySellerInfo = escrowDetails[
             myBuyersInfo.contractBeingBought
         ];
+        // check if the contract ownership has transferred to the escrow contract
+        require(ITestERC20(contractBeingBought).owner() == address(this), "Seller has not transferred ownership to the escrow");
 
         require(
             escrowDetails[contractBeingBought].buyersAddress == msg.sender,
@@ -112,11 +109,11 @@ contract Escrow {
         );
 
         // buyer sends payment to seller
-        (bool sent, ) = seller.sellerAddress.call{value: seller.sellPrice}("");
+        (bool sent, ) = seller.sellerAddress.call{value: buyer.sellPrice}("");
         require(sent, "Payment Failed to seller address");
 
-        // use interface to transferownership to buyer
-        IFakeERC20(seller.contractBeingSold).transferOwnership(buyer.buyerAddress);
+        // use interface to transfer ownership to buyer
+        ITestERC20(seller.contractBeingSold).transferOwnership(buyer.buyerAddress);
 
         // emit an event when transaction completed
         emit TransactionCompleted(buyer, seller);
