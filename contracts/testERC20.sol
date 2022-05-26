@@ -12,7 +12,7 @@ contract TestERC20 is ERC20 {
     }
 
     function transferOwnership(address newOwner) public {
-        // require(msg.sender == owner, "Must be owner to transer");
+        require(msg.sender == owner, "Must be owner to transer");
         _owner = newOwner;
     }
 
