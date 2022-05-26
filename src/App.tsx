@@ -24,18 +24,18 @@ function App() {
 
   async function submit(e: React.SyntheticEvent) {
     e.preventDefault();
+    const target = e.target as typeof e.target & {
+      contractBeingSold: { value: string };
+      sellPrice: { value: string };
+      buyerAddress: { value: string };
+      reset: () => null;
+    };
 
     if (user === "seller") {
-      const target = e.target as typeof e.target & {
-        contractBeingSold: { value: string };
-        sellPrice: { value: string };
-        buyerAddress: { value: string };
-        reset: () => null;
-      };
       console.log("target", target.contractBeingSold.value);
       const contractBeingSold = target.contractBeingSold.value;
       const buyerAddress = target.buyerAddress.value;
-      const sellPrice = BigNumber.from(target.buyerAddress.value);
+      const sellPrice = BigNumber.from(target.sellPrice.value);
 
       // First transfer contract ownership to contract
       if (await transferContractOwnership(contractBeingSold)) {
@@ -44,13 +44,9 @@ function App() {
         alert("transfer of ownership failed");
       }
     } else {
-      const target = e.target as typeof e.target & {
-        contractBeingPurchased: { value: string };
-        buyPrice: { value: string };
-        reset: () => null;
-      };
-      const buyPrice = target.buyPrice.value;
-      sendEth(CONTRACT_ADDRESS, buyPrice);
+      const contractBeingSold = target.contractBeingSold.value;
+      const sellPrice = BigNumber.from(target.sellPrice.value);
+      sendEth(CONTRACT_ADDRESS, sellPrice, contractBeingSold);
     }
   }
 
@@ -173,20 +169,47 @@ function App() {
     }
   };
 
-  async function sendEth(escrowAddress: string, purchasePrice: string) {
+  async function sendEth(
+    escrowAddress: string,
+    purchasePrice: BigNumber,
+    contractBeingPurchased: string
+  ) {
     try {
+      console.log("purchase price", purchasePrice);
       setLoading(true);
       const { ethereum } = window as any;
       if (ethereum) {
         await ethereum.send("eth_requestAccounts");
         const provider = new ethers.providers.Web3Provider(ethereum);
         const signer = provider.getSigner();
-        ethers.utils.getAddress(escrowAddress);
-        const tx = await signer.sendTransaction({
-          to: escrowAddress,
-          value: ethers.utils.parseEther(purchasePrice)
+
+        const contract = new ethers.Contract(
+          CONTRACT_ADDRESS,
+          contractAbi.abi,
+          signer
+        );
+
+        let tx = await contract.buyerSendPay(
+          contractBeingPurchased,
+          purchasePrice,
+          {
+            value: purchasePrice
+          }
+        );
+
+        // Listen for event
+        contract.on("TransactionCompleted", (from, message, timestamp) => {
+          console.log("got event", message, from, timestamp);
+          alert("Received info: That transaction is complete");
         });
-        console.log("tx", tx);
+
+        // wait for transaction to go through
+        const receipt = await tx.wait();
+        if (receipt.status === 1) {
+          console.log("worked!");
+        } else {
+          alert("transaction failed! please try again");
+        }
       }
     } catch (error) {
       console.log("error: ", error);
@@ -229,7 +252,7 @@ function App() {
         <div className="nes-container with-title">
           <h1 className="title">Enter Your Information Below</h1>
           <form onSubmit={submit}>
-            {user == "seller" ? (
+            {user === "seller" ? (
               <div>
                 <label>Contract Being Sold:</label>
                 <input required type="text" name="contractBeingSold" />
@@ -241,9 +264,9 @@ function App() {
             ) : (
               <div>
                 <label>Contract Being Purchased:</label>
-                <input required type="text" name="contractBeingPurchased" />
+                <input required type="text" name="contractBeingSold" />
                 <label>Buy Price:</label>
-                <input required type="decimal" name="buyPrice" />
+                <input required type="decimal" name="sellPrice" />
                 <label>Escrow Address:</label>
                 <input
                   required
@@ -277,7 +300,7 @@ function App() {
           }}
         >
           <div>
-            <img style={{ width: "225px" }} src={nft1} />
+            <img style={{ width: "225px" }} src={nft1} alt="image2" />
             <div>Buyer</div>
           </div>
           <div>Sent Ethereum</div>
@@ -291,7 +314,7 @@ function App() {
           }}
         >
           <div>
-            <img style={{ width: "225px" }} src={nft2} />
+            <img style={{ width: "225px" }} src={nft2} alt="image1" />
             <div>Seller</div>
           </div>
           <div>Pending Transfer</div>
