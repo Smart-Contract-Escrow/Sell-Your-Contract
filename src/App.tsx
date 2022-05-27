@@ -2,7 +2,7 @@ import "./App.css";
 import { BigNumber, ethers } from "ethers";
 import React, { useState } from "react";
 import contractAbi from "./utils/Escrow.json";
-import TestERC20Contract from "./utils/TestERC20.json";
+import TestERC20Contract from "./utils/ITestERC20.json";
 import { ExternalProvider } from "@ethersproject/providers";
 import address from "./addresses.json";
 
@@ -61,7 +61,7 @@ function App() {
         const provider = new ethers.providers.Web3Provider(ethereum);
         const signer = provider.getSigner();
         const contract = new ethers.Contract(
-          ERC20_CONTRACT_ADDRESS,
+          contractBeingSold,
           TestERC20Contract.abi,
           signer
         );
