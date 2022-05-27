@@ -226,13 +226,14 @@ function App() {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        marginTop: "35vh"
+        marginTop: "5vh"
       }}
     >
-      <h3>Escrow App Services</h3>
-
+      <h3>Sell Your Smart Contract</h3><br></br>
       {/* Call the connectWallet function we just wrote when the button is clicked */}
       <button onClick={connectWallet}>Connect Wallet</button>
+      <br></br>
+      <p><i>Trustless escrow for smart contracts.</i></p>
     </div>
   );
 
