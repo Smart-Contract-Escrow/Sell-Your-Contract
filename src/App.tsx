@@ -11,7 +11,7 @@ import { Loading } from "./components/Loading";
 import nft1 from "./nft1.webp";
 import nft2 from "./nft2.png";
 
-const { escrow: CONTRACT_ADDRESS } = address;
+const { escrow: CONTRACT_ADDRESS = "" } = address;
 
 declare global {
   interface Window {
@@ -22,10 +22,11 @@ declare global {
 function App() {
   const [currentAccount, setCurrentAccount] = useState("");
   const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState("");
+  const [user, setUser] = useState("seller");
   const [transContract, setTransContract] = useState(false);
   const [readyForBuyer, setReadyForBuyer] = useState(false);
   const [paymentSent, setPaymentSent] = useState(false);
+  const [contractPurchasePrice, setContractPurchasePrice] = useState("");
 
   async function submit(e: React.SyntheticEvent) {
     e.preventDefault();
@@ -41,6 +42,7 @@ function App() {
       const contractBeingSold = target.contractBeingSold.value;
       const buyerAddress = target.buyerAddress.value;
       const sellPrice = ethers.utils.parseEther(target.sellPrice.value);
+      setContractPurchasePrice(target.sellPrice.value);
 
       // First transfer contract ownership to contract
       if (await transferContractOwnership(contractBeingSold)) {
@@ -53,7 +55,7 @@ function App() {
     } else {
       const contractBeingSold = target.contractBeingSold.value;
       const sellPrice = ethers.utils.parseEther(target.sellPrice.value);
-      sendEth(sellPrice, contractBeingSold);
+      sendEth(sellPrice, contractBeingSold, target);
     }
   }
 
@@ -179,7 +181,8 @@ function App() {
 
   async function sendEth(
     purchasePrice: BigNumber,
-    contractBeingPurchased: string
+    contractBeingPurchased: string,
+    target: { reset: () => null }
   ) {
     try {
       console.log("purchase price", purchasePrice);
@@ -223,6 +226,7 @@ function App() {
       console.log("error: ", error);
     } finally {
       setLoading(false);
+      target.reset();
     }
   }
 
@@ -251,8 +255,18 @@ function App() {
   const renderButtonGroup = () => {
     return (
       <div className="button-container">
-        <button onClick={() => setUser("buyer")}>Buy Contract</button>
-        <button onClick={() => setUser("seller")}>Sell Contract</button>
+        <button
+          onClick={() => setUser("buyer")}
+          className={`${user === "buyer" ? "button-active" : ""}`}
+        >
+          Buy Contract
+        </button>
+        <button
+          onClick={() => setUser("seller")}
+          className={`${user === "seller" ? "button-active" : ""}`}
+        >
+          Sell Contract
+        </button>
       </div>
     );
   };
@@ -260,7 +274,6 @@ function App() {
   const renderUserForm = () => {
     return (
       <div className="tabs ">
-        <h3 className={loading ? "is-blurred" : ""}>{`${user} Contract`}</h3>
         <div
           className={`nes-container with-title  ${loading ? "is-blurred" : ""}`}
         >
@@ -280,13 +293,19 @@ function App() {
                 <label>Contract Being Purchased:</label>
                 <input required type="text" name="contractBeingSold" />
                 <label>Buy Price (eth):</label>
-                <input required type="decimal" name="sellPrice" />
+                <input
+                  required
+                  type="decimal"
+                  name="sellPrice"
+                  value={contractPurchasePrice ?? ""}
+                  disabled
+                />
                 <label>Escrow Address:</label>
                 <input
                   required
                   type="text"
                   name="escrowddress"
-                  value={CONTRACT_ADDRESS}
+                  value={CONTRACT_ADDRESS ?? ""}
                   disabled
                 />
               </div>
@@ -302,7 +321,11 @@ function App() {
   const renderConnectedContainer = () => (
     <div className="App">
       <div className="group-card">
-        <div className="card">
+        <div
+          className={`card card-buyer ${
+            user === "buyer" ? "card-scale" : "card-gray"
+          } `}
+        >
           <div>
             <img style={{ width: "125px" }} src={nft1} alt="image2" />
             <div>Buyer</div>
@@ -328,7 +351,11 @@ function App() {
             </div>
           </div>
         </div>
-        <div className="card">
+        <div
+          className={`card card-seller ${
+            user === "seller" ? "card-scale" : "card-gray"
+          } `}
+        >
           <div>
             <img style={{ width: "125px" }} src={nft2} alt="image1" />
             <div>Seller</div>
