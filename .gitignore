@@ -31,3 +31,7 @@ typechain
 #Hardhat files
 cache
 artifacts
+
+# 
+addresses.json
+utils/*.json
