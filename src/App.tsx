@@ -23,6 +23,9 @@ function App() {
   const [currentAccount, setCurrentAccount] = useState("");
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState("");
+  const [transContract, setTransContract] = useState(false);
+  const [readyForBuyer, setReadyForBuyer] = useState(false);
+  const [paymentSent, setPaymentSent] = useState(false);
 
   async function submit(e: React.SyntheticEvent) {
     e.preventDefault();
@@ -41,8 +44,10 @@ function App() {
 
       // First transfer contract ownership to contract
       if (await transferContractOwnership(contractBeingSold)) {
+        setTransContract(true);
         setContractDetail(contractBeingSold, buyerAddress, sellPrice, target);
       } else {
+        setTransContract(false);
         alert("transfer of ownership failed");
       }
     } else {
@@ -122,6 +127,7 @@ function App() {
         // Listen for event
         contract.on("SellerReady", (from, message, timestamp) => {
           console.log("got event", message, from, timestamp);
+          setReadyForBuyer(true);
           alert("Received info: selling contract " + from.contractBeingSold);
         });
 
@@ -201,6 +207,7 @@ function App() {
         // Listen for event
         contract.on("TransactionCompleted", (from, message, timestamp) => {
           console.log("got event", message, from, timestamp);
+          setPaymentSent(true);
           alert("Received info: That transaction is complete");
         });
 
@@ -302,16 +309,22 @@ function App() {
           </div>
           <div className="card-text">
             <div className="card-text__check">
-              <CheckMark fill="green" />
-              <span style={{ color: "green" }}>Ready To Send Payment</span>
+              <CheckMark fill={readyForBuyer ? "green" : "darkgray"} />
+              <span style={{ color: readyForBuyer ? "green" : "darkgray" }}>
+                Ready To Send Payment
+              </span>
             </div>
             <div className="card-text__check">
-              <CheckMark />
-              <span>Payment Sent</span>
+              <CheckMark fill={paymentSent ? "green" : "darkgray"} />
+              <span style={{ color: paymentSent ? "green" : "darkgray" }}>
+                Payment Sent
+              </span>
             </div>
             <div className="card-text__check">
-              <CheckMark />
-              <span>Contract Received</span>
+              <CheckMark fill={paymentSent ? "green" : "darkgray"} />
+              <span style={{ color: paymentSent ? "green" : "darkgray" }}>
+                Contract Received
+              </span>
             </div>
           </div>
         </div>
@@ -322,21 +335,29 @@ function App() {
           </div>
           <div className="card-text">
             <div className="card-text__check">
-              <CheckMark />
-              <span>Transfered Contract To Escrow</span>
+              <CheckMark fill={transContract ? "green" : "darkgray"} />
+              <span style={{ color: transContract ? "green" : "darkgray" }}>
+                Transfered Contract To Escrow
+              </span>
             </div>
             <div className="card-text__check">
-              <CheckMark />
-              <span>Ready For Buyer</span>
+              <CheckMark fill={readyForBuyer ? "green" : "darkgray"} />
+              <span style={{ color: readyForBuyer ? "green" : "darkgray" }}>
+                Ready For Buyer
+              </span>
             </div>
             <div className="card-text__check">
-              <CheckMark />
-              <span>Received Payment</span>
+              <CheckMark fill={paymentSent ? "green" : "darkgray"} />
+              <span style={{ color: paymentSent ? "green" : "darkgray" }}>
+                Received Payment
+              </span>
             </div>
           </div>
         </div>
       </div>
-      <div className="button-group">{renderButtonGroup()}</div>
+      <div className={`button-group ${loading ? "is-blurred" : ""}`}>
+        {renderButtonGroup()}
+      </div>
       <div>{user && renderUserForm()}</div>
     </div>
   );
