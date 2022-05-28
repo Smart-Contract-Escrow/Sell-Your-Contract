@@ -35,6 +35,10 @@ contract Escrow {
     // emit an event when the transaction is completed
     event TransactionCompleted(BuyersInfo buyer, EscrowContracts seller);
 
+    // emit an event if a contract is delisted
+    // TODO: if we add notify buyer feature, send buyer address here as well?
+    event ContractDelisted(EscrowContracts canceledSeller);
+
     /// @dev seller sends contract transaction details
     function setContractDetail(
          address contractBeingSold
@@ -98,6 +102,17 @@ contract Escrow {
 
         // call goodToGo function after buyer sends payment
         goodToGo(mySellerInfo, myBuyersInfo);
+    }
+
+    /// @dev cancel/delist flow, should only be able to be called by the seller
+    function delist(address contractToDelist) external {
+        EscrowContracts memory contractDetails = escrowDetails[contractToDelist];
+        require(contractDetails.sellerAddress == msg.sender, "Only seller can delist");
+        // transfer ownership back to the seller
+        ITestERC20(contractToDelist).transferOwnership(contractDetails.sellerAddress);
+        delete escrowDetails[contractToDelist];
+        emit ContractDelisted(contractDetails);
+
     }
 
     /// @dev buyer sends payment to seller, escrow transfers the ownership to buyer
