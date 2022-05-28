@@ -3,7 +3,7 @@ const { ethers } = require("hardhat");
 
 describe("Escrow", function () {
   let escrowContract;
-  let fakeERC20Contract;
+  let testERC20Contract;
 
   let buyerAccount;
   let sellerAccount;
@@ -17,14 +17,15 @@ describe("Escrow", function () {
     sellerAccount = accounts[0];
     buyerAccount = accounts[1];
 
-    const fakeERC20Factory = await ethers.getContractFactory("FakeERC20");
-    fakeERC20Contract = await fakeERC20Factory.deploy(10);
-    await fakeERC20Contract.deployed();
+    const testERC20Factory = await ethers.getContractFactory("TestERC20");
+    testERC20Contract = await testERC20Factory.deploy(10000000);
+    await testERC20Contract.deployed();
 
     const escrowFactory = await ethers.getContractFactory("Escrow");
     escrowContract = await escrowFactory.deploy();
     await escrowContract.deployed();
     owner = escrowContract.address;
+
   });
 
   it("should create seller info", async function () {
@@ -33,16 +34,16 @@ describe("Escrow", function () {
     const seller = escrowContract.connect(sellerAccount);
 
     await seller.setContractDetail(
-      fakeERC20Contract.address,
+      testERC20Contract.address,
       sellAmount,
       buyerAccount.address
     );
 
     const { contractBeingSold, buyersAddress } = await seller.escrowDetails(
-      fakeERC20Contract.address
+      testERC20Contract.address
     );
 
-    expect(contractBeingSold).to.equal(fakeERC20Contract.address);
+    expect(contractBeingSold).to.equal(testERC20Contract.address);
     expect(buyersAddress).to.equal(buyerAccount.address);
   });
 
@@ -50,7 +51,31 @@ describe("Escrow", function () {
     await expect(
       escrowContract
         .connect(buyerAccount)
-        .setBuyersInfo(fakeERC20Contract.address)
+        .buyerSendPay(testERC20Contract.address, sellAmount)
     ).to.be.revertedWith("Buyer did not send any amount");
   });
+
+	// describe("setContractDetails", function () {
+
+	// 	it("should revert when contract is not owned by escrow", async function () {
+	// 		await expect(
+	// 			escrowContract
+  //         .connect(sellerAccount)
+  //         .setContractDetails()
+	// 		).to.be.revertedWith("Seller has not transferred the ownership to the escrow.");
+	// 	});
+
+	// 	it("should emit SellerReady event when escrow contract details are created", async function () {
+	// 		await expect(
+  //       escrowContract
+  //         .connect(sellerAccount)
+  //         .setContractDetails()) 
+	// 			  .to.emit(escrow, "SellerReady")
+	// 			.withArgs(); 
+	// 	});
+	// });
+
 });
+
+
+
