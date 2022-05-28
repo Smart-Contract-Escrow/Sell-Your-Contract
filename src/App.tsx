@@ -36,7 +36,7 @@ function App() {
       reset: () => null;
     };
 
-    if (user === "seller") {
+    if (user === "Seller") {
       console.log("target", target.contractBeingSold.value);
       const contractBeingSold = target.contractBeingSold.value;
       const buyerAddress = target.buyerAddress.value;
@@ -50,6 +50,10 @@ function App() {
         setTransContract(false);
         alert("transfer of ownership failed");
       }
+    } else if (user === "Delist") {
+      console.log("target", target.contractBeingSold.value);
+      const contractBeingSold = target.contractBeingSold.value;
+      delist(contractBeingSold, target);
     } else {
       const contractBeingSold = target.contractBeingSold.value;
       const sellPrice = ethers.utils.parseEther(target.sellPrice.value);
@@ -146,6 +150,53 @@ function App() {
       setLoading(false);
     }
   }
+
+  // TODO: Move to hook
+  async function delist(
+    contractBeingSold: string,
+    target: any
+  ) {
+    try {
+      setLoading(true);
+      const { ethereum } = window;
+      if (ethereum) {
+        const provider = new ethers.providers.Web3Provider(ethereum);
+        const signer = provider.getSigner();
+        const contract = new ethers.Contract(
+          CONTRACT_ADDRESS,
+          contractAbi.abi,
+          signer
+        );
+
+        let tx = await contract.delist(
+          contractBeingSold,
+        );
+
+        // Listen for event
+        contract.on("ContractDelisted", (from, message, timestamp) => {
+          console.log("got event", message, from, timestamp);
+          setReadyForBuyer(true);
+          alert("Received info: delisted contract " + from.contractBeingSold + " and returned to seller.");
+
+
+        });
+
+        // wait for transaction to go through
+        const receipt = await tx.wait();
+        if (receipt.status === 1) {
+          console.log("worked!");
+          target.reset();
+        } else {
+          alert("transaction failed! please try again");
+        }
+      }
+    } catch (error) {
+      console.log("error: ", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
 
   // TODO: Move to hook
   const connectWallet = async () => {
@@ -251,8 +302,9 @@ function App() {
   const renderButtonGroup = () => {
     return (
       <div className="button-container">
-        <button onClick={() => setUser("buyer")}>Buy Contract</button>
-        <button onClick={() => setUser("seller")}>Sell Contract</button>
+        <button onClick={() => setUser("Buyer")}>Buy Contract</button>
+        <button onClick={() => setUser("Seller")}>Sell Contract</button>
+        <button onClick={() => setUser("Delist")}>Delist</button>
       </div>
     );
   };
@@ -266,18 +318,23 @@ function App() {
         >
           <h1 className="title">Enter Your Information Below</h1>
           <form onSubmit={submit}>
-            {user === "seller" ? (
+            {user === "Seller" ? (
               <div>
-                <label>Contract Being Sold:</label>
+                <label>Contract To Sell:</label>
                 <input required type="text" name="contractBeingSold" />
                 <label>Sell Price (eth):</label>
                 <input required type="decimal" name="sellPrice" />
                 <label>Buyer Address:</label>
                 <input required type="text" name="buyerAddress" />
               </div>
+            ) : user === "Delist" ? (
+              <div>
+                <label>Contract To Cancel:</label>
+                <input required type="text" name="contractToCancel" />
+              </div>
             ) : (
               <div>
-                <label>Contract Being Purchased:</label>
+                <label>Contract To Purchase:</label>
                 <input required type="text" name="contractBeingSold" />
                 <label>Buy Price (eth):</label>
                 <input required type="decimal" name="sellPrice" />
