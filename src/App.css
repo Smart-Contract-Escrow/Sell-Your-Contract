@@ -3,7 +3,7 @@
 }
 
 .button-group {
-  margin-top: 15vh;
+  margin-top: 1rem;
 }
 
 button {
@@ -16,4 +16,51 @@ button {
   flex-direction: column;
   justify-content: center;
   align-items: center;
+}
+
+.card-text {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-start;
+  flex-direction: column;
+  width: 100%;
+  padding-left: 2rem;
+}
+
+.card {
+  display: flex;
+  border: 1px solid grey;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+}
+
+.group-card {
+  display: grid;
+  grid-gap: 2rem;
+}
+
+.card-text__check {
+  display: flex;
+}
+
+.card-text__check span {
+  padding-left: 1rem;
+  color: darkgray;
+}
+
+.full-loader {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+}
+
+.tabs {
+  position: relative;
+  z-index: 1;
+}
+
+.is-blurred {
+  filter: blur(4px);
+  -webkit-filter: blur(4px);
 }

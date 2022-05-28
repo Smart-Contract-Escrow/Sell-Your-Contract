@@ -5,11 +5,13 @@ import contractAbi from "./utils/Escrow.json";
 import TestERC20Contract from "./utils/ITestERC20.json";
 import { ExternalProvider } from "@ethersproject/providers";
 import address from "./addresses.json";
+import { CheckMark } from "./components/CheckMark";
+import { Loading } from "./components/Loading";
 
 import nft1 from "./nft1.webp";
 import nft2 from "./nft2.png";
 
-const { escrow: CONTRACT_ADDRESS, erc20: ERC20_CONTRACT_ADDRESS } = address;
+const { escrow: CONTRACT_ADDRESS } = address;
 
 declare global {
   interface Window {
@@ -21,6 +23,9 @@ function App() {
   const [currentAccount, setCurrentAccount] = useState("");
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState("");
+  const [transContract, setTransContract] = useState(false);
+  const [readyForBuyer, setReadyForBuyer] = useState(false);
+  const [paymentSent, setPaymentSent] = useState(false);
 
   async function submit(e: React.SyntheticEvent) {
     e.preventDefault();
@@ -35,18 +40,20 @@ function App() {
       console.log("target", target.contractBeingSold.value);
       const contractBeingSold = target.contractBeingSold.value;
       const buyerAddress = target.buyerAddress.value;
-      const sellPrice = BigNumber.from(target.sellPrice.value);
+      const sellPrice = ethers.utils.parseEther(target.sellPrice.value);
 
       // First transfer contract ownership to contract
       if (await transferContractOwnership(contractBeingSold)) {
+        setTransContract(true);
         setContractDetail(contractBeingSold, buyerAddress, sellPrice, target);
       } else {
+        setTransContract(false);
         alert("transfer of ownership failed");
       }
     } else {
       const contractBeingSold = target.contractBeingSold.value;
-      const sellPrice = BigNumber.from(target.sellPrice.value);
-      sendEth(CONTRACT_ADDRESS, sellPrice, contractBeingSold);
+      const sellPrice = ethers.utils.parseEther(target.sellPrice.value);
+      sendEth(sellPrice, contractBeingSold);
     }
   }
 
@@ -120,6 +127,7 @@ function App() {
         // Listen for event
         contract.on("SellerReady", (from, message, timestamp) => {
           console.log("got event", message, from, timestamp);
+          setReadyForBuyer(true);
           alert("Received info: selling contract " + from.contractBeingSold);
         });
 
@@ -170,7 +178,6 @@ function App() {
   };
 
   async function sendEth(
-    escrowAddress: string,
     purchasePrice: BigNumber,
     contractBeingPurchased: string
   ) {
@@ -200,6 +207,7 @@ function App() {
         // Listen for event
         contract.on("TransactionCompleted", (from, message, timestamp) => {
           console.log("got event", message, from, timestamp);
+          setPaymentSent(true);
           alert("Received info: That transaction is complete");
         });
 
@@ -229,11 +237,14 @@ function App() {
         marginTop: "5vh"
       }}
     >
-      <h3>Sell Your Smart Contract</h3><br></br>
+      <h3>Sell Your Smart Contract</h3>
+      <br></br>
       {/* Call the connectWallet function we just wrote when the button is clicked */}
       <button onClick={connectWallet}>Connect Wallet</button>
       <br></br>
-      <p><i>Trustless escrow for smart contracts.</i></p>
+      <p>
+        <i>Trustless escrow for smart contracts.</i>
+      </p>
     </div>
   );
 
@@ -248,16 +259,18 @@ function App() {
 
   const renderUserForm = () => {
     return (
-      <div>
-        <h3>{`${user} Contract`}</h3>
-        <div className="nes-container with-title">
+      <div className="tabs ">
+        <h3 className={loading ? "is-blurred" : ""}>{`${user} Contract`}</h3>
+        <div
+          className={`nes-container with-title  ${loading ? "is-blurred" : ""}`}
+        >
           <h1 className="title">Enter Your Information Below</h1>
           <form onSubmit={submit}>
             {user === "seller" ? (
               <div>
                 <label>Contract Being Sold:</label>
                 <input required type="text" name="contractBeingSold" />
-                <label>Sell Price:</label>
+                <label>Sell Price (eth):</label>
                 <input required type="decimal" name="sellPrice" />
                 <label>Buyer Address:</label>
                 <input required type="text" name="buyerAddress" />
@@ -266,7 +279,7 @@ function App() {
               <div>
                 <label>Contract Being Purchased:</label>
                 <input required type="text" name="contractBeingSold" />
-                <label>Buy Price:</label>
+                <label>Buy Price (eth):</label>
                 <input required type="decimal" name="sellPrice" />
                 <label>Escrow Address:</label>
                 <input
@@ -281,47 +294,70 @@ function App() {
             <button>Submit</button>
           </form>
         </div>
-        {loading && (
-          <h1 style={{ color: "red", marginTop: "2rem" }}>
-            Please Wait Sending Transaction...
-          </h1>
-        )}
+        {loading && <Loading />}
       </div>
     );
   };
 
   const renderConnectedContainer = () => (
     <div className="App">
-      <div style={{ display: "flex", alignItems: "center" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            border: "1px solid grey"
-          }}
-        >
+      <div className="group-card">
+        <div className="card">
           <div>
-            <img style={{ width: "225px" }} src={nft1} alt="image2" />
+            <img style={{ width: "125px" }} src={nft1} alt="image2" />
             <div>Buyer</div>
           </div>
-          <div>Sent Ethereum</div>
+          <div className="card-text">
+            <div className="card-text__check">
+              <CheckMark fill={readyForBuyer ? "green" : "darkgray"} />
+              <span style={{ color: readyForBuyer ? "green" : "darkgray" }}>
+                Ready To Send Payment
+              </span>
+            </div>
+            <div className="card-text__check">
+              <CheckMark fill={paymentSent ? "green" : "darkgray"} />
+              <span style={{ color: paymentSent ? "green" : "darkgray" }}>
+                Payment Sent
+              </span>
+            </div>
+            <div className="card-text__check">
+              <CheckMark fill={paymentSent ? "green" : "darkgray"} />
+              <span style={{ color: paymentSent ? "green" : "darkgray" }}>
+                Contract Received
+              </span>
+            </div>
+          </div>
         </div>
-        <div></div>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            border: "1px solid grey"
-          }}
-        >
+        <div className="card">
           <div>
-            <img style={{ width: "225px" }} src={nft2} alt="image1" />
+            <img style={{ width: "125px" }} src={nft2} alt="image1" />
             <div>Seller</div>
           </div>
-          <div>Pending Transfer</div>
+          <div className="card-text">
+            <div className="card-text__check">
+              <CheckMark fill={transContract ? "green" : "darkgray"} />
+              <span style={{ color: transContract ? "green" : "darkgray" }}>
+                Transfered Contract To Escrow
+              </span>
+            </div>
+            <div className="card-text__check">
+              <CheckMark fill={readyForBuyer ? "green" : "darkgray"} />
+              <span style={{ color: readyForBuyer ? "green" : "darkgray" }}>
+                Ready For Buyer
+              </span>
+            </div>
+            <div className="card-text__check">
+              <CheckMark fill={paymentSent ? "green" : "darkgray"} />
+              <span style={{ color: paymentSent ? "green" : "darkgray" }}>
+                Received Payment
+              </span>
+            </div>
+          </div>
         </div>
       </div>
-      <div className="button-group">{renderButtonGroup()}</div>
+      <div className={`button-group ${loading ? "is-blurred" : ""}`}>
+        {renderButtonGroup()}
+      </div>
       <div>{user && renderUserForm()}</div>
     </div>
   );
