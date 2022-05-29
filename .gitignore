@@ -34,4 +34,6 @@ artifacts
 
 # 
 addresses.json
-utils/*.json
+/src/utils/*.json
+src/utils/*.json
+Escrow.json

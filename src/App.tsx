@@ -154,10 +154,7 @@ function App() {
   }
 
   // TODO: Move to hook
-  async function delist(
-    contractBeingSold: string,
-    target: any
-  ) {
+  async function delist(contractBeingSold: string, target: any) {
     try {
       setLoading(true);
       const { ethereum } = window;
@@ -170,17 +167,20 @@ function App() {
           signer
         );
 
-        let tx = await contract.delist(
-          contractBeingSold,
-        );
+        let tx = await contract.delist(contractBeingSold);
 
         // Listen for event
         contract.on("ContractDelisted", (from, message, timestamp) => {
           console.log("got event", message, from, timestamp);
-          setReadyForBuyer(true);
-          alert("Received info: delisted contract " + from.contractBeingSold + " and returned to seller.");
 
-
+          setTransContract(false);
+          setReadyForBuyer(false);
+          setPaymentSent(false);
+          alert(
+            "Received info: delisted contract " +
+              from.contractBeingSold +
+              " and returned to seller."
+          );
         });
 
         // wait for transaction to go through
@@ -193,12 +193,12 @@ function App() {
         }
       }
     } catch (error) {
+      alert("Delist failed!");
       console.log("error: ", error);
     } finally {
       setLoading(false);
     }
   }
-
 
   // TODO: Move to hook
   const connectWallet = async () => {
@@ -335,7 +335,7 @@ function App() {
           className={`nes-container with-title  ${loading ? "is-blurred" : ""}`}
         >
           <h1 className="title">Enter Your Information Below</h1>
-          <form onSubmit={submit}>
+          <form spellCheck="false" autoComplete="off" onSubmit={submit}>
             {user === "Seller" ? (
               <div>
                 <label>Contract To Sell:</label>
@@ -359,8 +359,9 @@ function App() {
                   required
                   type="decimal"
                   name="sellPrice"
-                  value={contractPurchasePrice ?? ""}
-                  disabled
+                  value={contractPurchasePrice}
+                  onChange={(e) => setContractPurchasePrice(e.target.value)}
+                  disabled={+contractPurchasePrice > 0}
                 />
                 <label>Escrow Address:</label>
                 <input
@@ -384,8 +385,9 @@ function App() {
     <div className="App">
       <div className="group-card">
         <div
-          className={`card card-buyer ${user === "Buyer" ? "card-scale" : "card-gray"
-            } `}
+          className={`card card-buyer ${
+            user === "Buyer" ? "card-scale" : "card-gray"
+          } `}
         >
           <div>
             <img style={{ width: "125px" }} src={nft1} alt="image2" />
@@ -413,8 +415,9 @@ function App() {
           </div>
         </div>
         <div
-          className={`card card-seller ${user === "Seller" || user === "Delist" ? "card-scale" : "card-gray"
-            } `}
+          className={`card card-seller ${
+            user === "Seller" || user === "Delist" ? "card-scale" : "card-gray"
+          } `}
         >
           <div>
             <img style={{ width: "125px" }} src={nft2} alt="image1" />
