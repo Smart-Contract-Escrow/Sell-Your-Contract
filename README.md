@@ -19,9 +19,9 @@ Unfortunately, there is no existing solution that enables trustless private mark
 **Resources**: 
 * [Whitepaper](https://docs.google.com/document/d/10KBQ4uHuWa1Z5eNzDnpow6YFL8SbplNHdxjsjMNP_JM/edit?usp=sharing)
 
-* [Pitch Deck]()
+* [Pitch Deck](https://docs.google.com/presentation/d/1DM0f90koPnjq9E4PbMSyfTdv39XNEVS9AbRJTVb4KZQ/edit?usp=sharing)
 
-* [Demo]()
+* [Demo](https://www.youtube.com/watch?v=R_GiktG7cZU)
 
 ---
 
