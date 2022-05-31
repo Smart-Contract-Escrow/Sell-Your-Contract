@@ -10,7 +10,7 @@ button {
   margin: 20px;
 }
 
-// connect wallet container
+/* connect wallet container */
 .connect-wallet-container {
   display: flex;
   flex-direction: column;
