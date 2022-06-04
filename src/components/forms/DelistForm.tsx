@@ -1,19 +1,26 @@
 import address from "../../addresses.json";
 import { ethers } from "ethers";
 import contractAbi from "../../utils/Escrow.json";
+import { useEvents, useLoading } from "../../contexts/contexts";
 
 const { escrow: CONTRACT_ADDRESS = "" } = address;
-export const DelistForm = ({
-  setLoading,
-  setTransContract,
-  setReadyForBuyer,
-  setPaymentSent
-}: {
-  setLoading: (e: boolean) => void;
-  setTransContract: (val: boolean) => void;
-  setReadyForBuyer: (val: boolean) => void;
-  setPaymentSent: (e: boolean) => void;
-}) => {
+export const DelistForm = () => {
+  const [, setLoading] = useLoading();
+  const [checks, setChecks] = useEvents();
+  const { transContract, readyForBuyer, paymentSent } = checks;
+
+  function setTransContract(val: boolean) {
+    setChecks({ transContract: val, readyForBuyer, paymentSent });
+  }
+
+  function setReadyForBuyer(val: boolean) {
+    setChecks({ transContract, readyForBuyer: val, paymentSent });
+  }
+
+  function setPaymentSent(val: boolean) {
+    setChecks({ transContract, readyForBuyer, paymentSent: val });
+  }
+
   async function submit(e: React.SyntheticEvent) {
     e.preventDefault();
     const target = e.target as typeof e.target & {

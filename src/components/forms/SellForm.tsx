@@ -2,19 +2,27 @@ import address from "../../addresses.json";
 import { BigNumber, ethers } from "ethers";
 import contractAbi from "../../utils/Escrow.json";
 import TestERC20Contract from "../../utils/ITestERC20.json";
+import { useEvents, useLoading } from "../../contexts/contexts";
 
 const { escrow: CONTRACT_ADDRESS = "" } = address;
 export const SellForm = ({
-  setTransContract,
-  setContractPurchasePrice,
-  setLoading,
-  setReadyForBuyer
+  setContractPurchasePrice
 }: {
-  setTransContract: (val: boolean) => void;
   setContractPurchasePrice: (e: string) => void;
-  setLoading: (val: boolean) => void;
-  setReadyForBuyer: (val: boolean) => void;
 }) => {
+  const [, setLoading] = useLoading();
+  const [checks, setChecks] = useEvents();
+
+  function setTransContract(val: boolean) {
+    const { readyForBuyer, paymentSent } = checks;
+    setChecks({ transContract: val, readyForBuyer, paymentSent });
+  }
+
+  function setReadyForBuyer(val: boolean) {
+    const { paymentSent } = checks;
+    setChecks({ transContract: val, readyForBuyer: val, paymentSent });
+  }
+
   async function submit(e: React.SyntheticEvent) {
     e.preventDefault();
     const target = e.target as typeof e.target & {
