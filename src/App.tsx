@@ -250,13 +250,9 @@ function App() {
           signer
         );
 
-        let tx = await contract.buyerSendPay(
-          contractBeingPurchased,
-          purchasePrice,
-          {
-            value: purchasePrice
-          }
-        );
+        let tx = await contract.buyerSendPay(contractBeingPurchased, {
+          value: purchasePrice
+        });
 
         // Listen for event
         contract.on("TransactionCompleted", (from, message, timestamp) => {

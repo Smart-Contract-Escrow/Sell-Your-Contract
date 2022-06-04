@@ -31,10 +31,9 @@ contract Escrow {
     event SellerReady(EscrowItem seller);
 
     // emit an event when the transaction is completed
-    event TransactionCompleted(EscrowItem EscrowItem);
+    event TransactionCompleted(EscrowItem item);
 
     // emit an event if a contract is delisted
-    // TODO: if we add notify buyer feature, send buyer address here as well?
     event ContractDelisted(EscrowItem canceledSeller);
 
     /// @dev seller sends contract transaction details
