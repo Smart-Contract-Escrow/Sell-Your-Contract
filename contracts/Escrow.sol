@@ -11,82 +11,63 @@ interface ITestERC20 {
 /// @title Sell Your Contract Escrow Protocol
 
 contract Escrow {
-    // create a struct to group contract being sold, seller, buyer, and price together
-    struct EscrowContracts {
-        address contractBeingSold;
-        address sellerAddress;
-        uint256 sellPrice;
-        address buyersAddress;
+    enum Status {
+        sold,
+        pending
+    }
+    // create a struct  to hold escrow information
+    struct EscrowItem {
+        address contractItem;
+        address seller;
+        address buyer;
+        uint256 price;
+        Status status;
     }
 
-    // create a struct for buyer information
-    struct BuyersInfo {
-        address contractBeingBought;
-        address buyerAddress;
-        uint256 sellPrice;
-    }
-
-    // creat a mapping to keep track of EscrowContracts struct
-    mapping(address => EscrowContracts) public escrowDetails;
+    // creat a mapping to keep track of EscrowItem struct
+    mapping(address => EscrowItem) public escrowDetails;
 
     // emit an event when seller is ready
-    event SellerReady(EscrowContracts seller);
+    event SellerReady(EscrowItem seller);
 
     // emit an event when the transaction is completed
-    event TransactionCompleted(BuyersInfo buyer, EscrowContracts seller);
+    event TransactionCompleted(EscrowItem EscrowItem);
 
     // emit an event if a contract is delisted
     // TODO: if we add notify buyer feature, send buyer address here as well?
-    event ContractDelisted(EscrowContracts canceledSeller);
+    event ContractDelisted(EscrowItem canceledSeller);
 
     /// @dev seller sends contract transaction details
     function setContractDetail(
-         address contractBeingSold
-        ,uint256 sellPrice
-        ,address buyerAddress
+        address contractBeingSold,
+        uint256 sellPrice,
+        address buyerAddress
     ) external {
-        address sellerAddress = msg.sender;
-
-        EscrowContracts memory mySellerInfo = EscrowContracts(
-             contractBeingSold
-            ,sellerAddress
-            ,sellPrice
-            ,buyerAddress
-        );
-
         // check if contract is owned by escrow
         require(
-            ITestERC20(mySellerInfo.contractBeingSold).owner() == address(this),
+            ITestERC20(contractBeingSold).owner() == address(this),
             "Seller has not transferred the ownership to the escrow"
         );
 
+        EscrowItem memory mySellerInfo = EscrowItem(
+            contractBeingSold,
+            msg.sender,
+            buyerAddress,
+            sellPrice,
+            Status.pending
+        );
+
         // fill in escrow details
-        escrowDetails[mySellerInfo.contractBeingSold] = mySellerInfo;
+        escrowDetails[contractBeingSold] = mySellerInfo;
 
         // emit seller is ready
         emit SellerReady(mySellerInfo);
     }
 
     /// @dev buyer sends payment to the seller after seller provides contract transaction details and transferred ownership
-    function buyerSendPay(address contractBeingBought, uint256 price)
-        external
-        payable
-    {
-        uint256 amount = price;
-        address buyerAddress = msg.sender;
-
+    function buyerSendPay(address contractBeingBought) external payable {
         // require buyer sends payment
-        require(amount != 0, "Buyer did not send any payment");
-
-        BuyersInfo memory myBuyersInfo = BuyersInfo(
-            contractBeingBought,
-            buyerAddress,
-            amount
-        );
-
-        EscrowContracts memory mySellerInfo = escrowDetails[
-            myBuyersInfo.contractBeingBought
-        ];
+        require(msg.value != 0, "Buyer did not send any payment");
 
         // check if the contract ownership has transferred to the escrow contract
         require(
@@ -96,63 +77,56 @@ contract Escrow {
 
         // check if the intended buyer address correct
         require(
-            escrowDetails[contractBeingBought].buyersAddress == msg.sender,
+            escrowDetails[contractBeingBought].buyer == msg.sender,
             "Buyer address did not match seller"
         );
 
+        EscrowItem memory contractInfo = escrowDetails[contractBeingBought];
+
         // call goodToGo function after buyer sends payment
-        goodToGo(mySellerInfo, myBuyersInfo);
-    }
-
-    /// @dev cancel/delist flow, should only be able to be called by the seller
-    function delist(address contractToDelist) external {
-        EscrowContracts memory contractDetails = escrowDetails[contractToDelist];
-        require(contractDetails.sellerAddress == msg.sender, "Only seller can delist");
-        // transfer ownership back to the seller
-        ITestERC20(contractToDelist).transferOwnership(contractDetails.sellerAddress);
-        delete escrowDetails[contractToDelist];
-        emit ContractDelisted(contractDetails);
-
+        goodToGo(contractInfo);
     }
 
     /// @dev buyer sends payment to seller, escrow transfers the ownership to buyer
-    function goodToGo(EscrowContracts memory seller, BuyersInfo memory buyer)
-        internal
-    {
+    function goodToGo(EscrowItem memory escrowContract) internal {
         require(
-            seller.sellPrice == buyer.sellPrice,
-            "Sell price doesn't match buy price"
-        );
-        require(
-            seller.contractBeingSold == buyer.contractBeingBought,
-            "Contract sold and bought not the same"
+            escrowContract.price == msg.value,
+            "Buyer did not send correct payment amount"
         );
 
         // buyer sends payment to seller
-        (bool sent, ) = seller.sellerAddress.call{value: buyer.sellPrice}("");
+        (bool sent, ) = escrowContract.seller.call{value: escrowContract.price}(
+            ""
+        );
         require(sent, "Payment failed to send to seller address");
 
         // use interface to transferownership to buyer
-        ITestERC20(seller.contractBeingSold).transferOwnership(
-            buyer.buyerAddress
+        ITestERC20(escrowContract.contractItem).transferOwnership(
+            escrowContract.buyer
         );
 
         // emit an event when transaction is completed
-        emit TransactionCompleted(buyer, seller);
+        emit TransactionCompleted(escrowContract);
 
-        // delete stored contract transaction details
-        delete escrowDetails[seller.contractBeingSold];
+        escrowContract.status = Status.sold;
     }
 
     /// @dev only buyer can check the listed price of the contract
     function getSellerAmount(address myContract) public view returns (uint256) {
-        EscrowContracts memory seller = escrowDetails[myContract];
+        EscrowItem memory seller = escrowDetails[myContract];
 
-        require(
-            seller.buyersAddress == msg.sender,
-            "Only buyer can see the price"
-        );
+        require(seller.buyer == msg.sender, "Only buyer can see the price");
 
-        return seller.sellPrice;
+        return seller.price;
+    }
+
+    /// @dev cancel/delist flow, should only be able to be called by the seller
+    function delist(address contractToDelist) external {
+        EscrowItem memory contractDetails = escrowDetails[contractToDelist];
+        require(contractDetails.seller == msg.sender, "Only seller can delist");
+        // transfer ownership back to the seller
+        ITestERC20(contractToDelist).transferOwnership(contractDetails.seller);
+        delete escrowDetails[contractToDelist];
+        emit ContractDelisted(contractDetails);
     }
 }
