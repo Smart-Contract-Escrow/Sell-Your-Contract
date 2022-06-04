@@ -1,12 +1,13 @@
 import "./App.css";
 import { BigNumber, ethers } from "ethers";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import contractAbi from "./utils/Escrow.json";
 import TestERC20Contract from "./utils/ITestERC20.json";
 import { ExternalProvider } from "@ethersproject/providers";
 import address from "./addresses.json";
 import { CheckMark } from "./components/CheckMark";
 import { Loading } from "./components/Loading";
+import { connectWallet, getCurrentAccount } from "./utils/WebCommon";
 
 import nft1 from "./nft1.webp";
 import nft2 from "./nft2.png";
@@ -27,6 +28,13 @@ function App() {
   const [readyForBuyer, setReadyForBuyer] = useState(false);
   const [paymentSent, setPaymentSent] = useState(false);
   const [contractPurchasePrice, setContractPurchasePrice] = useState("");
+
+  useEffect(() => {
+    const accountSet = async () => {
+      setCurrentAccount(await getCurrentAccount());
+    };
+    accountSet();
+  }, []);
 
   async function submit(e: React.SyntheticEvent) {
     e.preventDefault();
@@ -199,36 +207,6 @@ function App() {
       setLoading(false);
     }
   }
-
-  // TODO: Move to hook
-  const connectWallet = async () => {
-    try {
-      const { ethereum } = window as any;
-
-      if (!ethereum) {
-        alert("Get MetaMask -> https://metamask.io/");
-        return;
-      }
-
-      const accounts = await ethereum.request({
-        method: "eth_requestAccounts"
-      });
-
-      if (accounts && Array.isArray(accounts)) {
-        // Here you can access accounts[0]
-        setCurrentAccount(accounts[0]);
-        console.log("Connected", accounts[0] as number);
-      } else {
-        // Handle errors here if accounts is not valid.
-        console.log("invalid account!");
-        return;
-      }
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   async function sendEth(
     purchasePrice: BigNumber,
