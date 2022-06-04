@@ -6,8 +6,11 @@ import TestERC20Contract from "./utils/ITestERC20.json";
 import { ExternalProvider } from "@ethersproject/providers";
 import address from "./addresses.json";
 import { CheckMark } from "./components/CheckMark";
-import { Loading } from "./components/Loading";
-import { connectWallet, getCurrentAccount } from "./utils/WebCommon";
+import { getCurrentAccount } from "./utils/WebCommon";
+
+import { ConnectWalletContainer } from "./components/ConnectWalletContainer";
+import { ButtonGroup } from "./components/ButtonGroup";
+import { UserForm } from "./components/UserForm";
 
 import nft1 from "./nft1.webp";
 import nft2 from "./nft2.png";
@@ -256,104 +259,6 @@ function App() {
   }
 
   // Render methods
-  const renderNotConnectedContainer = () => (
-    <div
-      className="connect-wallet-container"
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        marginTop: "5vh"
-      }}
-    >
-      <h3>Sell Your Smart Contract</h3>
-      <br></br>
-      {/* Call the connectWallet function we just wrote when the button is clicked */}
-      <button onClick={connectWallet}>Connect Wallet</button>
-      <br></br>
-      <p>
-        <i>Trustless escrow for smart contracts.</i>
-      </p>
-    </div>
-  );
-
-  const renderButtonGroup = () => {
-    return (
-      <div className="button-container">
-        <button
-          onClick={() => setUser("Buyer")}
-          className={`${user === "Buyer" ? "button-active" : ""}`}
-        >
-          Buy Contract
-        </button>
-        <button
-          onClick={() => setUser("Seller")}
-          className={`${user === "Seller" ? "button-active" : ""}`}
-        >
-          Sell Contract
-        </button>
-        <button
-          onClick={() => setUser("Delist")}
-          className={`${user === "Delist" ? "button-active" : ""}`}
-        >
-          Delist
-        </button>
-      </div>
-    );
-  };
-
-  const renderUserForm = () => {
-    return (
-      <div className="tabs ">
-        <div
-          className={`nes-container with-title  ${loading ? "is-blurred" : ""}`}
-        >
-          <h1 className="title">Enter Your Information Below</h1>
-          <form spellCheck="false" autoComplete="off" onSubmit={submit}>
-            {user === "Seller" ? (
-              <div>
-                <label>Contract To Sell:</label>
-                <input required type="text" name="contractBeingSold" />
-                <label>Sell Price (eth):</label>
-                <input required type="decimal" name="sellPrice" />
-                <label>Buyer Address:</label>
-                <input required type="text" name="buyerAddress" />
-              </div>
-            ) : user === "Delist" ? (
-              <div>
-                <label>Contract To Cancel:</label>
-                <input required type="text" name="contractToCancel" />
-              </div>
-            ) : (
-              <div>
-                <label>Contract To Purchase:</label>
-                <input required type="text" name="contractBeingSold" />
-                <label>Buy Price (eth):</label>
-                <input
-                  required
-                  type="decimal"
-                  name="sellPrice"
-                  value={contractPurchasePrice}
-                  onChange={(e) => setContractPurchasePrice(e.target.value)}
-                  disabled={+contractPurchasePrice > 0}
-                />
-                <label>Escrow Address:</label>
-                <input
-                  required
-                  type="text"
-                  name="escrowddress"
-                  value={CONTRACT_ADDRESS ?? ""}
-                  disabled
-                />
-              </div>
-            )}
-            <button>Submit</button>
-          </form>
-        </div>
-        {loading && <Loading />}
-      </div>
-    );
-  };
 
   const renderConnectedContainer = () => (
     <div className="App">
@@ -420,15 +325,33 @@ function App() {
         </div>
       </div>
       <div className={`button-group ${loading ? "is-blurred" : ""}`}>
-        {renderButtonGroup()}
+        <ButtonGroup user={user} setUserInfo={setUserInfo} />
       </div>
-      <div>{user && renderUserForm()}</div>
+      <div>
+        {user && (
+          <UserForm
+            loading={loading}
+            submit={submit}
+            user={user}
+            contractPurchasePrice={contractPurchasePrice}
+            setContractPurchasePrice={setContractPurchase}
+          />
+        )}
+      </div>
     </div>
   );
 
+  function setUserInfo(user: string) {
+    setUser(user);
+  }
+
+  function setContractPurchase(price: string) {
+    setContractPurchasePrice(price);
+  }
+
   return (
     <div className="app-container">
-      {!currentAccount && renderNotConnectedContainer()}
+      {!currentAccount && <ConnectWalletContainer />}
       {/* Render the input form if an account is connected */}
       {currentAccount && renderConnectedContainer()}
     </div>
