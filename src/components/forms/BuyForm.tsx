@@ -42,7 +42,6 @@ export const BuyForm = ({
       setLoading(true);
       const { ethereum } = window as any;
       if (ethereum) {
-        await ethereum.send("eth_requestAccounts");
         const provider = new ethers.providers.Web3Provider(ethereum);
         const signer = provider.getSigner();
 
@@ -91,7 +90,6 @@ export const BuyForm = ({
           name="sellPrice"
           value={contractPurchasePrice}
           onChange={(e) => setContractPurchasePrice(e.target.value)}
-          disabled={+contractPurchasePrice > 0}
         />
         <label>Escrow Address:</label>
         <input
